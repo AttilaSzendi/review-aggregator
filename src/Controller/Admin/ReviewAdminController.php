@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Dto\CreateReviewInput;
 use App\Dto\ReviewFilter;
-use App\Entity\Review;
 use App\Enum\Platform;
 use App\Form\ReviewType;
 use App\Repository\ReviewRepository;
+use App\Service\ReviewCreator;
 use App\Service\ReviewStatsCalculator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,6 +22,7 @@ final class ReviewAdminController extends AbstractController
     public function __construct(
         private readonly ReviewRepository $reviews,
         private readonly ReviewStatsCalculator $statsCalculator,
+        private readonly ReviewCreator $reviewCreator,
     ) {
     }
 
@@ -47,26 +49,21 @@ final class ReviewAdminController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var array{platform: \App\Enum\Platform, externalId: string, authorName: string, rating: int, content: string} $data */
-            $data = $form->getData();
-
-            $review = new Review(
-                $data['platform'],
-                $data['externalId'],
-                $data['authorName'],
-                $data['rating'],
-                $data['content'],
-                new \DateTimeImmutable(),
-            );
-            $this->reviews->save($review);
+            /** @var CreateReviewInput $input */
+            $input = $form->getData();
+            $this->reviewCreator->create($input);
 
             $this->addFlash('success', 'Review added.');
 
             return $this->redirectToRoute('admin_reviews_index');
         }
 
+        // 422 on an invalid submission (standard Symfony practice; also lets
+        // Turbo/AJAX clients detect the failure); 200 on the initial GET.
+        $status = $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK;
+
         return $this->render('admin/review/new.html.twig', [
             'form' => $form->createView(),
-        ]);
+        ], new Response(status: $status));
     }
 }

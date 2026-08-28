@@ -4,29 +4,34 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
-use App\Entity\Review;
 use App\Enum\Platform;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
+use App\Factory\ReviewFactory;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Zenstruck\Foundry\Test\Factories;
+use Zenstruck\Foundry\Test\ResetDatabase;
 
 final class ReviewApiControllerTest extends WebTestCase
 {
+    // ResetDatabase rebuilds the schema for the test run and clears rows between
+    // tests; Factories enables the ReviewFactory below. Together they replace the
+    // hand-written schema reset + seeding.
+    use Factories;
+    use ResetDatabase;
+
     private KernelBrowser $client;
-    private EntityManagerInterface $em;
 
     protected function setUp(): void
     {
         $this->client = static::createClient();
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-
-        $this->resetSchema();
-        $this->seedReviews();
     }
 
     public function testListReturnsSeededReviews(): void
     {
+        ReviewFactory::new()->onPlatform(Platform::Google)->reviewedAt('-1 day')->create();
+        ReviewFactory::new()->onPlatform(Platform::Facebook)->reviewedAt('-2 days')->create();
+        ReviewFactory::new()->onPlatform(Platform::Trustpilot)->reviewedAt('-3 days')->create();
+
         $this->client->request('GET', '/api/reviews');
 
         self::assertResponseIsSuccessful();
@@ -34,12 +39,14 @@ final class ReviewApiControllerTest extends WebTestCase
 
         self::assertSame(3, $payload['meta']['total']);
         self::assertCount(3, $payload['data']);
-        // Ordered by reviewedAt DESC — newest first.
-        self::assertSame('google', $payload['data'][0]['platform']);
+        self::assertSame('google', $payload['data'][0]['platform']); // newest first
     }
 
     public function testListCanBeFilteredByPlatform(): void
     {
+        ReviewFactory::createMany(2, ['platform' => Platform::Google]);
+        ReviewFactory::new()->onPlatform(Platform::Trustpilot)->create();
+
         $this->client->request('GET', '/api/reviews?platform=trustpilot');
 
         self::assertResponseIsSuccessful();
@@ -51,13 +58,16 @@ final class ReviewApiControllerTest extends WebTestCase
 
     public function testStatsAggregatesRatings(): void
     {
+        ReviewFactory::new()->withRating(5)->create();
+        ReviewFactory::new()->withRating(3)->create();
+        ReviewFactory::new()->withRating(4)->create();
+
         $this->client->request('GET', '/api/reviews/stats');
 
         self::assertResponseIsSuccessful();
         $payload = $this->json();
 
         self::assertSame(3, $payload['total']);
-        // JSON does not distinguish 4 from 4.0, so compare numerically.
         self::assertEqualsWithDelta(4.0, $payload['average'], 0.001); // (5 + 3 + 4) / 3
         self::assertSame(1, $payload['distribution']['5']);
         self::assertSame(0, $payload['distribution']['1']);
@@ -83,7 +93,7 @@ final class ReviewApiControllerTest extends WebTestCase
         self::assertSame('yelp', $payload['platform']);
         self::assertNotNull($payload['id']);
 
-        self::assertSame(4, $this->em->getRepository(Review::class)->count([]));
+        self::assertSame(1, ReviewFactory::repository()->count());
     }
 
     public function testCreateRejectsInvalidRating(): void
@@ -110,35 +120,5 @@ final class ReviewApiControllerTest extends WebTestCase
     private function json(): array
     {
         return json_decode($this->client->getResponse()->getContent(), true, 512, \JSON_THROW_ON_ERROR);
-    }
-
-    private function resetSchema(): void
-    {
-        $tool = new SchemaTool($this->em);
-        $classes = $this->em->getMetadataFactory()->getAllMetadata();
-        $tool->dropSchema($classes);
-        $tool->createSchema($classes);
-    }
-
-    private function seedReviews(): void
-    {
-        $rows = [
-            [Platform::Google, 'g-1', 'Anna', 5, 'Great', '-1 day'],
-            [Platform::Facebook, 'f-1', 'Bob', 3, 'Okay', '-2 days'],
-            [Platform::Trustpilot, 'tp-1', 'Cara', 4, 'Good', '-3 days'],
-        ];
-
-        foreach ($rows as [$platform, $externalId, $author, $rating, $content, $when]) {
-            $this->em->persist(new Review(
-                $platform,
-                $externalId,
-                $author,
-                $rating,
-                $content,
-                new \DateTimeImmutable($when),
-            ));
-        }
-        $this->em->flush();
-        $this->em->clear();
     }
 }

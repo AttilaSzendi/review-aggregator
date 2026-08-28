@@ -8,30 +8,36 @@ use App\Enum\Platform;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * Request payload for creating a review through the API.
+ * Command payload for creating a review — the single source of both the
+ * validation rules and the create contract.
  *
- * Bound via #[MapRequestPayload]: Symfony deserializes the JSON body into this
- * object and runs the validator before the controller is invoked.
+ * Used by two entry points without duplication:
+ *  - the JSON API, bound via #[MapRequestPayload] (deserialised + validated);
+ *  - the admin form, bound as its data_class (the same constraints drive the
+ *    form errors).
+ *
+ * A mutable form-model (public properties, sensible defaults) rather than an
+ * immutable value object, because both the Form component and the request
+ * deserialiser need to populate it field by field.
  */
 final class CreateReviewInput
 {
-    public function __construct(
-        public readonly Platform $platform,
+    #[Assert\NotNull]
+    public ?Platform $platform = null;
 
-        #[Assert\NotBlank]
-        #[Assert\Length(max: 128)]
-        public readonly string $externalId,
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 128)]
+    public string $externalId = '';
 
-        #[Assert\NotBlank]
-        #[Assert\Length(max: 180)]
-        public readonly string $authorName,
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 180)]
+    public string $authorName = '';
 
-        #[Assert\Range(min: 1, max: 5)]
-        public readonly int $rating,
+    #[Assert\NotNull]
+    #[Assert\Range(min: 1, max: 5)]
+    public ?int $rating = null;
 
-        #[Assert\NotBlank]
-        #[Assert\Length(max: 5000)]
-        public readonly string $content,
-    ) {
-    }
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 5000)]
+    public string $content = '';
 }

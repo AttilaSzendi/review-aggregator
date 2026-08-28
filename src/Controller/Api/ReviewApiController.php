@@ -6,8 +6,8 @@ namespace App\Controller\Api;
 
 use App\Dto\CreateReviewInput;
 use App\Dto\ReviewFilter;
-use App\Entity\Review;
 use App\Repository\ReviewRepository;
+use App\Service\ReviewCreator;
 use App\Service\ReviewStatsCalculator;
 use App\View\ReviewViewFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -23,6 +23,7 @@ final class ReviewApiController extends AbstractController
     public function __construct(
         private readonly ReviewRepository $reviews,
         private readonly ReviewStatsCalculator $statsCalculator,
+        private readonly ReviewCreator $reviewCreator,
         private readonly ReviewViewFactory $view,
     ) {
     }
@@ -55,15 +56,7 @@ final class ReviewApiController extends AbstractController
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(#[MapRequestPayload] CreateReviewInput $input): JsonResponse
     {
-        $review = new Review(
-            $input->platform,
-            $input->externalId,
-            $input->authorName,
-            $input->rating,
-            $input->content,
-            new \DateTimeImmutable(),
-        );
-        $this->reviews->save($review);
+        $review = $this->reviewCreator->create($input);
 
         return $this->json($this->view->review($review), Response::HTTP_CREATED);
     }

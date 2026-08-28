@@ -12,9 +12,13 @@ slice built to show clean, idiomatic Symfony.
   a console command, Doctrine ORM with migrations.
 - **SOLID / clean code**: a provider abstraction (`ReviewProviderInterface`) that new
   platforms plug into without touching the importer (OCP + DIP); a pure, side-effect-free
-  `ReviewStatsCalculator`; a view layer that keeps entities out of API responses.
+  `ReviewStatsCalculator`; a single `ReviewCreator` + one `CreateReviewInput` command DTO
+  shared by the API and the admin form, so the create logic and the validation rules each
+  live in exactly one place; a view layer that keeps entities out of API responses.
 - **Testing**: PHPUnit 9 — pure unit tests for the calculator and functional
-  `WebTestCase` tests that drive the real HTTP stack against a SQLite test DB.
+  `WebTestCase` tests (API + admin) that drive the real HTTP stack against a SQLite test DB,
+  with data built by a **zenstruck/foundry** factory (the Symfony analogue of Laravel model
+  factories).
 - **DevOps**: fully containerised — no PHP needed on the host.
 
 ## Architecture
@@ -24,11 +28,15 @@ Provider (Google, Trustpilot, …)  ──┐
   implements ReviewProviderInterface │  tagged iterator
                                      ▼
 ReviewImporter ──► idempotent upsert ──► Review (Doctrine entity, SQLite)
-                                              │
-              ┌───────────────────────────────┼───────────────────────────┐
-              ▼                                ▼                           ▼
-   ReviewApiController              ReviewStatsCalculator        ReviewAdminController
-   /api/reviews (GET, POST)         (pure aggregation)           /admin/reviews (Twig)
+
+Create path (one shared route to persistence):
+   API  #[MapRequestPayload] ─┐
+                              ├─► CreateReviewInput ─► ReviewCreator ─► Review
+   Admin form (data_class) ───┘        (one validation + create source)
+
+Read path:
+   ReviewApiController      ReviewStatsCalculator      ReviewAdminController
+   /api/reviews (GET)       (pure aggregation)         /admin/reviews (Twig)
    /api/reviews/stats
 ```
 
