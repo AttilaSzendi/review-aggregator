@@ -1,0 +1,79 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Reviews · Review Aggregator{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <div class="stat-row">
+            <div>
+                <div class="stat-big">{{ stats.average }} <span class="stars">{% for i in 1..5 %}{{ i <= stats.average|round(0, 'floor') ? '★' : '☆' }}{% endfor %}</span></div>
+                <div class="muted">{{ stats.total }} review{{ stats.total == 1 ? '' : 's' }}</div>
+            </div>
+            <div style="flex:1; min-width:220px;">
+                {% for score in 5..1 %}
+                    {% set count = stats.distribution[score] %}
+                    {% set pct = stats.total > 0 ? (count / stats.total * 100)|round : 0 %}
+                    <div style="display:flex; align-items:center; gap:8px; font-size:13px; margin:2px 0;">
+                        <span style="width:14px;">{{ score }}</span>
+                        <span class="stars">★</span>
+                        <span style="flex:1; height:8px; background:#eef0f3; border-radius:4px; overflow:hidden;">
+                            <span style="display:block; height:100%; width:{{ pct }}%; background:var(--accent);"></span>
+                        </span>
+                        <span class="muted" style="width:36px; text-align:right;">{{ count }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <form class="filters" method="get">
+            <div>
+                <label class="muted" style="font-size:12px;">Platform</label><br>
+                <select name="platform" onchange="this.form.submit()">
+                    <option value="">All platforms</option>
+                    {% for p in platforms %}
+                        <option value="{{ p.value }}" {{ filter.platform == p ? 'selected' : '' }}>{{ p.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="muted" style="font-size:12px;">Min. rating</label><br>
+                <select name="minRating" onchange="this.form.submit()">
+                    <option value="">Any</option>
+                    {% for score in 1..5 %}
+                        <option value="{{ score }}" {{ filter.minRating == score ? 'selected' : '' }}>{{ score }}+</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div><a href="{{ path('admin_reviews_index') }}" class="muted">Reset</a></div>
+        </form>
+    </div>
+
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Platform</th>
+                    <th>Author</th>
+                    <th>Rating</th>
+                    <th>Review</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for review in reviews %}
+                    <tr>
+                        <td><span class="badge">{{ review.platform.label }}</span></td>
+                        <td>{{ review.authorName }}</td>
+                        <td class="stars" title="{{ review.rating }}/5">{% for i in 1..5 %}{{ i <= review.rating ? '★' : '☆' }}{% endfor %}</td>
+                        <td>{{ review.content }}</td>
+                        <td class="muted" style="white-space:nowrap;">{{ review.reviewedAt|date('Y-m-d') }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="muted">No reviews yet. Run <code>app:import-reviews</code> or add one.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
