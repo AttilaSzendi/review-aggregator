@@ -1,4 +1,6 @@
 {
+    "name": "attilaszendi/review-aggregator",
+    "description": "Symfony review aggregation demo — REST API and Twig admin over Doctrine.",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",
