@@ -1,5 +1,7 @@
 # Review Aggregator
 
+[![CI](https://github.com/AttilaSzendi/review-aggregator/actions/workflows/ci.yml/badge.svg)](https://github.com/AttilaSzendi/review-aggregator/actions/workflows/ci.yml)
+
 A small Symfony 6.4 app that aggregates customer reviews from multiple external
 platforms (Google, Trustpilot, …), exposes them over a REST API, and renders a
 Trustindex-style admin with aggregate rating stats — a compact but production-shaped
