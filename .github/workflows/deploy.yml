@@ -1,0 +1,80 @@
+name: Deploy to droplet
+
+on:
+  # Manual-only until the droplet is set up and the deploy secrets exist.
+  # Add `push: { branches: [main] }` here to enable auto-deploy afterwards.
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-review-aggregator
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, pdo_sqlite
+          coverage: none
+          tools: composer:v2
+
+      # Build production dependencies on the runner so the droplet needs no Composer.
+      - name: Install production dependencies
+        run: composer install --no-dev --optimize-autoloader --no-progress --no-interaction
+
+      - name: Set up SSH
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts && chmod 644 ~/.ssh/known_hosts
+
+      # Preserve var/ (holds the SQLite database and cache) across deploys.
+      - name: Rsync to droplet
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          rsync -az --delete \
+            --exclude='.git' --exclude='.github' --exclude='tests' \
+            --exclude='var' --exclude='.env.local' \
+            ./ root@${HOST}:/var/www/review-aggregator/
+
+      - name: Migrate, seed and restart
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          ssh root@${HOST} bash -s <<'EOF'
+            set -e
+            cd /var/www/review-aggregator
+            chown -R www-data:www-data var
+            sudo -u www-data php bin/console cache:clear
+            sudo -u www-data php bin/console doctrine:migrations:migrate --no-interaction
+            sudo -u www-data php bin/console app:import-reviews
+            systemctl restart review-aggregator
+            for i in $(seq 1 15); do
+              [ "$(systemctl is-active review-aggregator)" = "active" ] && break
+              sleep 1
+            done
+            systemctl is-active review-aggregator
+          EOF
+
+      - name: Smoke test
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          ssh root@${HOST} '
+            for i in $(seq 1 15); do
+              code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8080/api/reviews)
+              [ "$code" = "200" ] && { echo "OK"; exit 0; }
+              echo "warmup $i: $code"; sleep 2
+            done
+            echo "app did not respond with 200"; exit 1
+          '

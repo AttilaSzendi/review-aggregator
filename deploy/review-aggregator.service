@@ -1,0 +1,26 @@
+# Systemd unit for the Review Aggregator demo.
+# Install to /etc/systemd/system/review-aggregator.service on the droplet.
+#
+# Serves the app on port 8080 via PHP's built-in server. That server is fine for
+# a low-traffic demo reached over http://<ip>:8080; a real production deploy
+# would sit behind nginx + php-fpm instead. Kept fully isolated (own service,
+# own port) so it can never affect the other apps on the box.
+
+[Unit]
+Description=Review Aggregator (Symfony demo)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/review-aggregator
+Environment=APP_ENV=prod
+Environment=APP_DEBUG=0
+# APP_SECRET is read from /var/www/review-aggregator/.env.local (see deploy/DEPLOY.md)
+ExecStart=/usr/bin/php -d opcache.enable=1 -d opcache.enable_cli=1 -d variables_order=EGPCS -S 0.0.0.0:8080 -t public
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
