@@ -5,47 +5,191 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{% block title %}Review Aggregator{% endblock %}</title>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⭐</text></svg>">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
-            :root { --bg:#f6f7f9; --card:#fff; --border:#e3e6ea; --text:#1f2430; --muted:#6b7280; --accent:#f5a623; --primary:#2f6feb; }
+            :root {
+                --bg: #eef1f7;
+                --surface: #ffffff;
+                --ink: #0f172a;
+                --muted: #64748b;
+                --faint: #94a3b8;
+                --border: #e7eaf1;
+                --border-soft: #f0f2f7;
+                --primary: #4f46e5;
+                --primary-ink: #ffffff;
+                --primary-soft: #eef0fe;
+                --star: #f59e0b;
+                --star-empty: #dfe3ea;
+                --track: #eef1f6;
+                --shadow: 0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+                --radius: 16px;
+                /* platform accents */
+                --google: #ea4335;
+                --facebook: #1877f2;
+                --trustpilot: #00b67a;
+                --yelp: #ff1a1a;
+            }
             * { box-sizing: border-box; }
-            body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); }
+            html { -webkit-text-size-adjust: 100%; }
+            body {
+                margin: 0;
+                font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+                background: var(--bg);
+                color: var(--ink);
+                font-size: 14px;
+                line-height: 1.5;
+                -webkit-font-smoothing: antialiased;
+            }
             a { color: var(--primary); text-decoration: none; }
             a:hover { text-decoration: underline; }
-            header.topbar { background:var(--card); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; gap:20px; }
-            header.topbar h1 { font-size:18px; margin:0; }
-            main { max-width: 960px; margin: 24px auto; padding: 0 24px; }
-            .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:20px; }
-            .flash { padding:12px 16px; border-radius:8px; background:#e7f6ec; color:#1a7f42; border:1px solid #b7e4c7; margin-bottom:16px; }
-            table { width:100%; border-collapse: collapse; }
-            th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); font-size:14px; vertical-align: top; }
-            th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
-            .stars { color: var(--accent); letter-spacing:1px; }
-            .badge { display:inline-block; padding:2px 8px; border-radius:999px; background:#eef2ff; color:#3949ab; font-size:12px; font-weight:600; }
-            .btn { display:inline-block; background:var(--primary); color:#fff; padding:9px 16px; border-radius:8px; border:0; font-size:14px; cursor:pointer; }
-            .btn:hover { text-decoration:none; opacity:.92; }
-            .muted { color: var(--muted); }
-            .stat-row { display:flex; gap:24px; flex-wrap:wrap; align-items:center; }
-            .stat-big { font-size:34px; font-weight:700; }
-            form.stack > div { margin-bottom:14px; display:flex; flex-direction:column; gap:6px; }
-            form.stack label { font-size:13px; font-weight:600; }
-            form.stack input, form.stack select, form.stack textarea { padding:9px 11px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit; }
-            .filters { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
-            ul.errors { color:#c0392b; font-size:13px; margin:4px 0 0; padding-left:18px; }
+
+            /* ---- top bar ---- */
+            header.topbar {
+                background: rgba(255,255,255,.82);
+                backdrop-filter: saturate(1.4) blur(8px);
+                border-bottom: 1px solid var(--border);
+                padding: 0 28px;
+                height: 62px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+            .brand { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 16px; letter-spacing: -.01em; margin-right: 14px; }
+            .brand .logo { font-size: 20px; }
+            header.topbar nav { display: flex; align-items: center; gap: 4px; }
+            .nav-link { color: var(--muted); font-weight: 500; padding: 7px 12px; border-radius: 9px; }
+            .nav-link:hover { color: var(--ink); background: var(--border-soft); text-decoration: none; }
+            .nav-link.is-active { color: var(--primary); background: var(--primary-soft); }
+            .topbar-spacer { flex: 1; }
+
+            main { max-width: 940px; margin: 32px auto 64px; padding: 0 28px; }
+
+            .card {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                box-shadow: var(--shadow);
+            }
+            .card + .card { margin-top: 20px; }
+            .card-pad { padding: 22px 24px; }
+
+            .page-head { display: flex; align-items: baseline; justify-content: space-between; margin: 0 4px 18px; gap: 12px; flex-wrap: wrap; }
+            .page-head h2 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; margin: 0; }
+            .page-head p { margin: 2px 0 0; color: var(--muted); }
+
+            /* ---- buttons ---- */
+            .btn {
+                display: inline-flex; align-items: center; gap: 7px;
+                background: var(--primary); color: var(--primary-ink);
+                padding: 10px 16px; border-radius: 10px; border: 0;
+                font: inherit; font-weight: 600; font-size: 14px; cursor: pointer;
+                box-shadow: 0 1px 2px rgba(79,70,229,.35); transition: transform .04s ease, opacity .15s ease;
+            }
+            .btn:hover { text-decoration: none; opacity: .94; }
+            .btn:active { transform: translateY(1px); }
+            .btn-ghost { background: transparent; color: var(--muted); box-shadow: none; padding: 10px 12px; }
+            .btn-ghost:hover { color: var(--ink); background: var(--border-soft); }
+
+            /* ---- flash ---- */
+            .flash {
+                display: flex; align-items: center; gap: 9px;
+                padding: 12px 16px; border-radius: 12px; margin-bottom: 18px;
+                background: #ecfdf3; color: #067647; border: 1px solid #abefc6; font-weight: 500;
+            }
+
+            /* ---- rating hero ---- */
+            .hero { display: grid; grid-template-columns: auto 1fr; gap: 40px; align-items: center; }
+            .hero-score { text-align: center; padding-right: 8px; }
+            .hero-score .num { font-size: 46px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+            .hero-score .stars { font-size: 18px; letter-spacing: 2px; margin-top: 8px; }
+            .hero-score .count { color: var(--muted); margin-top: 8px; font-size: 13px; }
+            .stars { color: var(--star); }
+            .stars .empty { color: var(--star-empty); }
+
+            .dist-row { display: grid; grid-template-columns: 42px 1fr 34px; align-items: center; gap: 12px; padding: 3px 0; }
+            .dist-row .lbl { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 3px; justify-content: flex-end; }
+            .dist-row .lbl .s { color: var(--star); }
+            .bar { height: 9px; background: var(--track); border-radius: 999px; overflow: hidden; }
+            .bar > span { display: block; height: 100%; background: linear-gradient(90deg, #fbbf24, #f59e0b); border-radius: 999px; }
+            .dist-row .val { color: var(--faint); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+
+            /* ---- filters ---- */
+            .filters { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+            .field { display: flex; flex-direction: column; gap: 6px; }
+            .field > label { font-size: 12px; font-weight: 600; color: var(--muted); }
+            select, input[type="text"], input[type="number"], textarea {
+                appearance: none; padding: 9px 12px; border: 1px solid var(--border);
+                border-radius: 10px; font: inherit; font-size: 14px; background: #fff; color: var(--ink);
+                min-height: 40px;
+            }
+            select { padding-right: 34px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 11px center; }
+            select:focus, input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+
+            /* ---- table ---- */
+            .table-wrap { overflow-x: auto; }
+            table { width: 100%; border-collapse: collapse; }
+            thead th {
+                text-align: left; padding: 12px 20px; color: var(--faint);
+                font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+                border-bottom: 1px solid var(--border);
+            }
+            tbody td { padding: 14px 20px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+            tbody tr:last-child td { border-bottom: 0; }
+            tbody tr { transition: background .12s ease; }
+            tbody tr:hover { background: #fafbfe; }
+
+            .author { display: flex; align-items: center; gap: 11px; }
+            .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 12px; color: #fff; flex: none; }
+            .author .name { font-weight: 600; }
+
+            .badge {
+                display: inline-flex; align-items: center; gap: 6px;
+                padding: 4px 10px 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
+                background: var(--border-soft); color: var(--muted);
+            }
+            .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+            .badge--google { color: var(--google); background: #fdeceb; }
+            .badge--facebook { color: var(--facebook); background: #e9f1fe; }
+            .badge--trustpilot { color: #05966b; background: #e6f8f1; }
+            .badge--yelp { color: var(--yelp); background: #ffe9e9; }
+
+            .review-text { color: #334155; max-width: 320px; }
+            .date { color: var(--faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
+            .empty-state { text-align: center; color: var(--muted); padding: 40px 20px; }
+            .empty-state code { background: var(--border-soft); padding: 2px 6px; border-radius: 6px; font-size: 13px; }
+
+            /* ---- form ---- */
+            form.stack .field { margin-bottom: 16px; }
+            form.stack .field > label { font-size: 13px; color: var(--ink); }
+            form.stack input, form.stack select, form.stack textarea { width: 100%; }
+            .errors { color: #b42318; font-size: 13px; margin: 5px 0 0; padding-left: 16px; }
+            .form-actions { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+
+            @media (max-width: 620px) {
+                .hero { grid-template-columns: 1fr; gap: 22px; }
+                .review-text { max-width: none; }
+            }
         </style>
         {% block stylesheets %}{% endblock %}
     </head>
     <body>
         <header class="topbar">
-            <h1>⭐ Review Aggregator</h1>
+            <span class="brand"><span class="logo">⭐</span> Review Aggregator</span>
             <nav>
-                <a href="{{ path('admin_reviews_index') }}">Reviews</a>
-                &nbsp;·&nbsp;
-                <a href="{{ path('admin_reviews_new') }}">Add review</a>
+                <a class="nav-link {{ app.request.attributes.get('_route') starts with 'admin_reviews_index' ? 'is-active' }}" href="{{ path('admin_reviews_index') }}">Reviews</a>
+                <a class="nav-link {{ app.request.attributes.get('_route') == 'admin_reviews_new' ? 'is-active' }}" href="{{ path('admin_reviews_new') }}">Add review</a>
             </nav>
+            <span class="topbar-spacer"></span>
+            <a class="btn" href="{{ path('admin_reviews_new') }}">+ Add review</a>
         </header>
         <main>
             {% for message in app.flashes('success') %}
-                <div class="flash">{{ message }}</div>
+                <div class="flash">✓ {{ message }}</div>
             {% endfor %}
             {% block body %}{% endblock %}
         </main>

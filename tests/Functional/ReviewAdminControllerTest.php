@@ -30,7 +30,7 @@ final class ReviewAdminControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/admin/reviews');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.stat-big');
+        self::assertSelectorExists('.hero-score .num');
         self::assertCount(3, $crawler->filter('tbody tr'));
     }
 

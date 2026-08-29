@@ -2,34 +2,41 @@
 
 {% block title %}Reviews · Review Aggregator{% endblock %}
 
+{% set platformColor = {'google': '#ea4335', 'facebook': '#1877f2', 'trustpilot': '#00b67a', 'yelp': '#ff1a1a'} %}
+
 {% block body %}
-    <div class="card">
-        <div class="stat-row">
-            <div>
-                <div class="stat-big">{{ stats.average }} <span class="stars">{% for i in 1..5 %}{{ i <= stats.average|round(0, 'floor') ? '★' : '☆' }}{% endfor %}</span></div>
-                <div class="muted">{{ stats.total }} review{{ stats.total == 1 ? '' : 's' }}</div>
+    <div class="page-head">
+        <div>
+            <h2>Reviews</h2>
+            <p>Aggregated customer reviews across every connected platform.</p>
+        </div>
+    </div>
+
+    <div class="card card-pad">
+        <div class="hero">
+            <div class="hero-score">
+                <div class="num">{{ stats.average }}</div>
+                <div class="stars">{% for i in 1..5 %}<span class="{{ i <= stats.average|round(0, 'floor') ? '' : 'empty' }}">★</span>{% endfor %}</div>
+                <div class="count">{{ stats.total }} review{{ stats.total == 1 ? '' : 's' }}</div>
             </div>
-            <div style="flex:1; min-width:220px;">
+            <div>
                 {% for score in 5..1 %}
                     {% set count = stats.distribution[score] %}
                     {% set pct = stats.total > 0 ? (count / stats.total * 100)|round : 0 %}
-                    <div style="display:flex; align-items:center; gap:8px; font-size:13px; margin:2px 0;">
-                        <span style="width:14px;">{{ score }}</span>
-                        <span class="stars">★</span>
-                        <span style="flex:1; height:8px; background:#eef0f3; border-radius:4px; overflow:hidden;">
-                            <span style="display:block; height:100%; width:{{ pct }}%; background:var(--accent);"></span>
-                        </span>
-                        <span class="muted" style="width:36px; text-align:right;">{{ count }}</span>
+                    <div class="dist-row">
+                        <span class="lbl">{{ score }} <span class="s">★</span></span>
+                        <span class="bar"><span style="width: {{ pct }}%"></span></span>
+                        <span class="val">{{ count }}</span>
                     </div>
                 {% endfor %}
             </div>
         </div>
     </div>
 
-    <div class="card">
+    <div class="card card-pad">
         <form class="filters" method="get">
-            <div>
-                <label class="muted" style="font-size:12px;">Platform</label><br>
+            <div class="field">
+                <label>Platform</label>
                 <select name="platform" onchange="this.form.submit()">
                     <option value="">All platforms</option>
                     {% for p in platforms %}
@@ -37,43 +44,55 @@
                     {% endfor %}
                 </select>
             </div>
-            <div>
-                <label class="muted" style="font-size:12px;">Min. rating</label><br>
+            <div class="field">
+                <label>Minimum rating</label>
                 <select name="minRating" onchange="this.form.submit()">
-                    <option value="">Any</option>
+                    <option value="">Any rating</option>
                     {% for score in 1..5 %}
-                        <option value="{{ score }}" {{ filter.minRating == score ? 'selected' : '' }}>{{ score }}+</option>
+                        <option value="{{ score }}" {{ filter.minRating == score ? 'selected' : '' }}>{{ score }}★ &amp; up</option>
                     {% endfor %}
                 </select>
             </div>
-            <div><a href="{{ path('admin_reviews_index') }}" class="muted">Reset</a></div>
+            {% if filter.platform or filter.minRating %}
+                <a class="btn-ghost btn" href="{{ path('admin_reviews_index') }}">Reset</a>
+            {% endif %}
         </form>
     </div>
 
     <div class="card">
-        <table>
-            <thead>
-                <tr>
-                    <th>Platform</th>
-                    <th>Author</th>
-                    <th>Rating</th>
-                    <th>Review</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for review in reviews %}
+        <div class="table-wrap">
+            <table>
+                <thead>
                     <tr>
-                        <td><span class="badge">{{ review.platform.label }}</span></td>
-                        <td>{{ review.authorName }}</td>
-                        <td class="stars" title="{{ review.rating }}/5">{% for i in 1..5 %}{{ i <= review.rating ? '★' : '☆' }}{% endfor %}</td>
-                        <td>{{ review.content }}</td>
-                        <td class="muted" style="white-space:nowrap;">{{ review.reviewedAt|date('Y-m-d') }}</td>
+                        <th>Platform</th>
+                        <th>Author</th>
+                        <th>Rating</th>
+                        <th>Review</th>
+                        <th>Date</th>
                     </tr>
-                {% else %}
-                    <tr><td colspan="5" class="muted">No reviews yet. Run <code>app:import-reviews</code> or add one.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for review in reviews %}
+                        {% set initials = review.authorName|split(' ')|slice(0, 2)|map(p => p|first)|join|upper %}
+                        <tr>
+                            <td>
+                                <span class="badge badge--{{ review.platform.value }}"><span class="dot"></span>{{ review.platform.label }}</span>
+                            </td>
+                            <td>
+                                <div class="author">
+                                    <span class="avatar" style="background: {{ platformColor[review.platform.value] ?? '#64748b' }}">{{ initials }}</span>
+                                    <span class="name">{{ review.authorName }}</span>
+                                </div>
+                            </td>
+                            <td class="stars" title="{{ review.rating }}/5">{% for i in 1..5 %}<span class="{{ i <= review.rating ? '' : 'empty' }}">★</span>{% endfor %}</td>
+                            <td class="review-text">{{ review.content }}</td>
+                            <td class="date">{{ review.reviewedAt|date('Y-m-d') }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="empty-state">No reviews yet. Run <code>app:import-reviews</code> or add one.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 {% endblock %}

@@ -2,33 +2,49 @@
 
 {% block title %}Add review · Review Aggregator{% endblock %}
 
+{% form_theme form _self %}
+
+{% block form_errors %}
+    {% if errors|length > 0 %}
+        <ul class="errors">
+            {% for error in errors %}<li>{{ error.message }}</li>{% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}
+
 {% block body %}
-    <div class="card" style="max-width:560px;">
-        <h2 style="margin-top:0;">Add a review</h2>
+    <div class="page-head">
+        <div>
+            <h2>Add a review</h2>
+            <p>Manually add a review — an external id is generated automatically.</p>
+        </div>
+    </div>
+
+    <div class="card card-pad" style="max-width: 560px;">
         {{ form_start(form, {attr: {class: 'stack'}}) }}
-            <div>
+            <div class="field">
                 {{ form_label(form.platform) }}
                 {{ form_widget(form.platform) }}
                 {{ form_errors(form.platform) }}
             </div>
-            <div>
+            <div class="field">
                 {{ form_label(form.authorName) }}
                 {{ form_widget(form.authorName) }}
                 {{ form_errors(form.authorName) }}
             </div>
-            <div>
+            <div class="field">
                 {{ form_label(form.rating) }}
-                {{ form_widget(form.rating, {attr: {min: 1, max: 5}}) }}
+                {{ form_widget(form.rating, {attr: {min: 1, max: 5, placeholder: '1–5'}}) }}
                 {{ form_errors(form.rating) }}
             </div>
-            <div>
+            <div class="field">
                 {{ form_label(form.content) }}
-                {{ form_widget(form.content, {attr: {rows: 4}}) }}
+                {{ form_widget(form.content, {attr: {rows: 4, placeholder: 'What did the customer say?'}}) }}
                 {{ form_errors(form.content) }}
             </div>
-            <div>
+            <div class="form-actions">
                 <button class="btn" type="submit">Save review</button>
-                <a href="{{ path('admin_reviews_index') }}" class="muted" style="margin-left:8px;">Cancel</a>
+                <a class="btn btn-ghost" href="{{ path('admin_reviews_index') }}">Cancel</a>
             </div>
         {{ form_end(form) }}
     </div>
