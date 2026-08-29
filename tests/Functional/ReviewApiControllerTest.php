@@ -73,15 +73,15 @@ final class ReviewApiControllerTest extends WebTestCase
         self::assertSame(0, $payload['distribution']['1']);
     }
 
-    public function testCreatePersistsReview(): void
+    public function testCreatePersistsReviewAndGeneratesExternalId(): void
     {
+        // externalId omitted — the API generates one for non-imported reviews.
         $this->client->request(
             'POST',
             '/api/reviews',
             server: ['CONTENT_TYPE' => 'application/json'],
             content: json_encode([
                 'platform' => 'yelp',
-                'externalId' => 'y-1',
                 'authorName' => 'New Reviewer',
                 'rating' => 5,
                 'content' => 'Added through the API.',
@@ -92,8 +92,28 @@ final class ReviewApiControllerTest extends WebTestCase
         $payload = $this->json();
         self::assertSame('yelp', $payload['platform']);
         self::assertNotNull($payload['id']);
+        self::assertStringStartsWith('manual-', $payload['externalId']);
 
         self::assertSame(1, ReviewFactory::repository()->count());
+    }
+
+    public function testCreateHonoursSuppliedExternalId(): void
+    {
+        $this->client->request(
+            'POST',
+            '/api/reviews',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: json_encode([
+                'platform' => 'yelp',
+                'externalId' => 'y-explicit-1',
+                'authorName' => 'Importer',
+                'rating' => 4,
+                'content' => 'Came with its own id.',
+            ], \JSON_THROW_ON_ERROR),
+        );
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('y-explicit-1', $this->json()['externalId']);
     }
 
     public function testCreateRejectsInvalidRating(): void

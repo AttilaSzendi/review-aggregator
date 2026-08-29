@@ -41,7 +41,6 @@ final class ReviewAdminControllerTest extends WebTestCase
 
         $this->client->submit($crawler->selectButton('Save review')->form([
             'review[platform]' => Platform::Google->value,
-            'review[externalId]' => 'form-1',
             'review[authorName]' => 'Form User',
             'review[rating]' => '5',
             'review[content]' => 'Added via the admin form.',
@@ -49,6 +48,9 @@ final class ReviewAdminControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/admin/reviews');
         self::assertSame(1, ReviewFactory::repository()->count());
+
+        // The admin form has no external id field; ReviewCreator generates one.
+        self::assertStringStartsWith('manual-', ReviewFactory::all()[0]->getExternalId());
     }
 
     public function testFormRejectsInvalidRatingViaSharedDtoRules(): void
@@ -57,7 +59,6 @@ final class ReviewAdminControllerTest extends WebTestCase
 
         $this->client->submit($crawler->selectButton('Save review')->form([
             'review[platform]' => Platform::Google->value,
-            'review[externalId]' => 'form-2',
             'review[authorName]' => 'Bad Rating',
             'review[rating]' => '9', // violates CreateReviewInput's Range(1, 5)
             'review[content]' => 'Should not be saved.',

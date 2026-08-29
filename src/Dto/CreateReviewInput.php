@@ -25,9 +25,13 @@ final class CreateReviewInput
     #[Assert\NotNull]
     public ?Platform $platform = null;
 
-    #[Assert\NotBlank]
+    /**
+     * Identifier on the source platform. Supplied by importers to keep imports
+     * idempotent; left null for manual/API entries, where {@see \App\Service\ReviewCreator}
+     * generates one.
+     */
     #[Assert\Length(max: 128)]
-    public string $externalId = '';
+    public ?string $externalId = null;
 
     #[Assert\NotBlank]
     #[Assert\Length(max: 180)]

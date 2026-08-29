@@ -30,9 +30,6 @@ final class ReviewType extends AbstractType
                 'choice_label' => static fn (Platform $p): string => $p->label(),
                 'placeholder' => 'Choose a platform',
             ])
-            ->add('externalId', TextType::class, [
-                'label' => 'External ID',
-            ])
             ->add('authorName', TextType::class)
             ->add('rating', IntegerType::class)
             ->add('content', TextareaType::class);

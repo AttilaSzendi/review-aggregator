@@ -75,8 +75,10 @@ docker compose up
 curl "http://localhost:8000/api/reviews/stats?platform=google"
 # {"total":5,"average":4.4,"distribution":{"1":0,"2":0,"3":1,"4":1,"5":3}}
 
+# externalId is optional: importers supply the platform's id (kept unique for
+# idempotent imports); omit it for manual/API entries and one is generated.
 curl -X POST http://localhost:8000/api/reviews -H 'Content-Type: application/json' \
-  -d '{"platform":"yelp","externalId":"y-1","authorName":"Jane","rating":5,"content":"Great!"}'
+  -d '{"platform":"yelp","authorName":"Jane","rating":5,"content":"Great!"}'
 ```
 
 ## Tests

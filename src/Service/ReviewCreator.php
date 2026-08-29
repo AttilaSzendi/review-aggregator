@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Dto\CreateReviewInput;
 use App\Entity\Review;
 use App\Repository\ReviewRepository;
+use Symfony\Component\Uid\Ulid;
 
 /**
  * Single place that turns a validated {@see CreateReviewInput} into a persisted
@@ -26,9 +27,15 @@ final class ReviewCreator
     {
         \assert(null !== $input->platform && null !== $input->rating);
 
+        // Manual/API entries carry no platform-assigned id; generate a unique one
+        // so the (platform, externalId) uniqueness still holds.
+        $externalId = '' !== (string) $input->externalId
+            ? (string) $input->externalId
+            : 'manual-'.(new Ulid())->toBase58();
+
         $review = new Review(
             $input->platform,
-            $input->externalId,
+            $externalId,
             $input->authorName,
             $input->rating,
             $input->content,
