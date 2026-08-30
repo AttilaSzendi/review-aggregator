@@ -1,8 +1,9 @@
 name: Deploy to droplet
 
 on:
-  # Manual-only until the deploy secrets exist. Add `push: { branches: [main] }`
-  # here to enable auto-deploy on every push to main afterwards.
+  # Auto-deploy on every push to main, plus manual runs from the Actions tab.
+  push:
+    branches: [main]
   workflow_dispatch: {}
 
 concurrency:
