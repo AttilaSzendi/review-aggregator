@@ -22,6 +22,9 @@ if ! command -v composer >/dev/null; then
 fi
 
 echo "==> fetching code"
+# The checkout is owned by www-data (see chown below) but git here runs as root,
+# so mark it a safe directory to avoid git's "dubious ownership" refusal.
+git config --global --add safe.directory "$APP_DIR"
 if [ -d "$APP_DIR/.git" ]; then
   git -C "$APP_DIR" fetch --depth 1 origin main
   git -C "$APP_DIR" reset --hard origin/main
